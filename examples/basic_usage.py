@@ -1,26 +1,29 @@
-"""
-Basic example of using BCOData to fetch data from Business Central OData API.
-"""
-
 import asyncio
-from bcodata import Client
+
+from bcodata import Client, QueryBuilder
 
 
-async def main():
-    # Initialize the client with your Business Central OData API URL and credentials
-    async with Client(
-        base_url="https://api.businesscentral.dynamics.com/v2.0/tenant_id/api/v2.0",
-        credentials=("username", "password"),
-    ) as client:
-        # Fetch data from an endpoint
-        data = await client.get_data("companies")
-        print(f"Retrieved {len(data)} companies")
+async def main() -> None:
+    """Usage example of the BCOData client."""
+    # Initialize the client
+    base_url = "https://api.businesscentral.dynamics.com/v2.0/tenant/companies/company/environment/api/v2.0"
+    credentials = ("username", "password")
 
-        # Print some details about each company
-        for company in data:
-            print(f"\nCompany: {company.get('name', 'N/A')}")
-            print(f"ID: {company.get('id', 'N/A')}")
-            print(f"System Version: {company.get('systemVersion', 'N/A')}")
+    async with Client(base_url, credentials) as client:
+        # Example 1: Simple query with filter
+        query1 = QueryBuilder().filter("Name eq 'John'")
+        data1 = await client.get_data("users", query1.build())
+        print(f"Found {len(data1)} users named John")  # noqa: T201
+
+        # Example 2: Pagination
+        query2 = QueryBuilder().top(10).skip(20).order_by("CreatedAt", descending=True)
+        await client.get_data("orders", query2.build())
+        print("Retrieved orders 21-30, sorted by creation date")  # noqa: T201
+
+        # Example 3: Field selection and filtering
+        query3 = QueryBuilder().select(["Name", "Email", "Phone"]).filter("Age gt 18 and City eq 'New York'").top(5)
+        data3 = await client.get_data("customers", query3.build())
+        print(f"Retrieved {len(data3)} adult customers from New York")  # noqa: T201
 
 
 if __name__ == "__main__":

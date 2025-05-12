@@ -3,6 +3,7 @@ import time
 import uuid
 from types import TracebackType
 from typing import Any, Self
+import json
 
 import aiolimiter
 import httpx
@@ -133,7 +134,7 @@ class Client:
             True if the exception is retryable, False otherwise.
 
         """
-        if isinstance(exception, httpx.ConnectError | httpx.ReadTimeout | httpx.PoolTimeoutError):
+        if isinstance(exception, httpx.ConnectError | httpx.ReadTimeout | httpx.PoolTimeout):
             logger.debug(f"Connection/timeout error identified as retryable: {exception!r}")
             return True
         if isinstance(exception, httpx.HTTPStatusError):
@@ -200,8 +201,8 @@ class Client:
             logger.error(f"[Request-{request_id}] Connection error for {url}: {e!s}")
             raise ODataConnectionError(url, params=params, original_exception=e) from e
         except httpx.ReadTimeout as e:
-            logger.error(f"[Request-{request_id}] Timeout error for {url}: {e.timeout} seconds")
-            raise ODataTimeoutError(url, params=params, timeout_duration=e.timeout) from e
+            logger.error(f"[Request-{request_id}] Timeout error for {url}: {self.timeout} seconds")
+            raise ODataTimeoutError(url, params=params, timeout_duration=self.timeout) from e
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
             error_text = e.response.text
@@ -211,7 +212,7 @@ class Client:
                 params=params,
                 response_content=error_text,
             ) from e
-        except httpx.JSONDecodeError as e:
+        except json.JSONDecodeError as e:
             logger.error(f"[Request-{request_id}] JSON decode error for {url}: {e!s}")
             raise ODataJSONDecodeError(url, params=params, original_exception=e) from e
         except httpx.RequestError as e:
@@ -234,7 +235,7 @@ class Client:
         endpoint : str
             The endpoint to request.
         params : dict[str, Any] | None
-            The parameters to pass to the endpoint.
+            The parameters to pass to the endpoint. Can be built using QueryBuilder.
 
         Returns
         -------
@@ -260,7 +261,7 @@ class Client:
             try:
                 response_json = response.json()
                 logger.debug(f"[Request-{request_id}] Successfully parsed JSON response")
-            except httpx.JSONDecodeError as e:
+            except json.JSONDecodeError as e:
                 logger.error(f"[Request-{request_id}] Failed to decode JSON response from {url}: {e!s}")
                 raise ODataJSONDecodeError(url, params=params, original_exception=e) from e
 
@@ -283,6 +284,6 @@ class Client:
         total_duration = time.time() - start_time
         logger.info(
             f"[Request-{request_id}] Retrieved {len(content)} total items from endpoint {endpoint} "
-            f"in {total_duration:.3f}s ({page_count} pages, avg {total_duration / max(page_count, 1):.3f}s per page)",
+            f"in {total_duration:.3f}s ({page_count} pages, avg {total_duration / (page_count or 1):.3f}s per page)",
         )
         return content
