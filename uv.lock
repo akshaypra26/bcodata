@@ -27,7 +27,7 @@ wheels = [
 
 [[package]]
 name = "bcodata"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiolimiter" },
@@ -43,9 +43,6 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "tenacity", specifier = ">=9.1.2" },
 ]
-
-[package.metadata.requires-dev]
-dev = []
 
 [[package]]
 name = "certifi"

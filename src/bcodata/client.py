@@ -1,9 +1,9 @@
 import asyncio
+import json
 import time
 import uuid
 from types import TracebackType
 from typing import Any, Self
-import json
 
 import aiolimiter
 import httpx
@@ -192,7 +192,6 @@ class Client:
             logger.error("Client not initialized. Use 'async with Client(...):' context manager.")
             raise RuntimeError("Client not initialized. Use 'async with Client(...):' context manager.")
 
-        params = params.copy() if params else {}
         logger.info(f"[Request-{request_id}] Requesting data from {url}")
 
         try:
